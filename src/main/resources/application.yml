@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8018
   servlet:
     context-path: /
 
@@ -7,7 +7,144 @@ spring:
   application:
     name: codonOpt
 
+  # DataSource Configuration
+  datasource:
+    url: jdbc:mysql://localhost:3306/codon_opt?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: 12345678
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA/Hibernate Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+    open-in-view: false
+
+  # Redis Configuration
+  redis:
+    # 地址 修改为真实IP
+    host: 127.0.0.1
+    # 端口，默认为6379
+    port: 6379
+    # 数据库索引
+    database: 0
+    # 密码
+    password: 12345678
+    # 连接超时时间
+    timeout: 60s
+    lettuce:
+      pool:
+        # 连接池中的最小空闲连接
+        min-idle: 1
+        # 连接池中的最大空闲连接
+        max-idle: 8
+        # 连接池的最大数据库连接数
+        max-active: 8
+        # #连接池最大阻塞等待时间（使用负值表示没有限制）
+        max-wait: -1ms
+      cluster:
+        refresh:
+          adaptive: true
+          period: 50s
+
+  # Mail Configuration
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your_email@gmail.com
+    password: your_app_password_here
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+        connectiontimeout: 10000
+        timeout: 10000
+        writetimeout: 10000
+
+  # Servlet Multipart Configuration (for file uploads)
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+# Application Configuration
+app:
+  # JWT Configuration
+  jwt:
+    secret: codonOptJwtSecretKeyForHS512AlgorithmMustBeAtLeast512BitsOr64BytesLongForSecurity
+    access-token-expiration: 3600000  # 1 hour in milliseconds
+    refresh-token-expiration: 604800000  # 7 days in milliseconds
+
+  # Perl Script Configuration
+  perl:
+    script-path: /path/to/codon_opt.pl
+    script-directory: /path/to/scripts
+    result-directory: C:\Users\15651\Documents\huoyan\kaifa\codonOpt\analyze\taskPath
+    timeout: 7200000  # 2 hours in milliseconds
+    mock-mode: true  # 启用模拟模式（不实际调用Perl脚本）
+
+  # Rate Limiting Configuration
+  rate-limit:
+    daily-limit: 10
+    block-duration: 86400000  # 24 hours in milliseconds
+
+  # Email Verification Configuration
+  email:
+    verification-code-expiration: 300000  # 5 minutes in milliseconds
+    frontend-url: http://localhost:3000
+
+  # Task Configuration
+  task:
+    scheduler-interval: 30000  # 30 seconds in milliseconds
+    max-concurrent-tasks: 1
+    queue-check-interval: 30000  # 30 seconds
+
+  # Codon Frequency File Configuration
+  codon-frequency:
+    upload-directory: ./uploads/codon-frequency
+    demo-file-path: C:\\Users\\15651\\Documents\\huoyan\\kaifa\\codonOpt\\analyze\\species_codon_frequency_demo.txt
+    max-file-size: 1048576  # 1MB in bytes
+
+  # Upload Configuration
+  upload:
+    max-file-size: 1048576  # 1MB in bytes
+
+# Springdoc OpenAPI (Swagger) Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+# Logging Configuration
 logging:
   level:
     root: INFO
     com.codonopt: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ./logs/codonopt.log
+    max-size: 10MB
+    max-history: 30

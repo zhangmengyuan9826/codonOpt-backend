@@ -31,3 +31,12 @@ Thumbs.db
 
 # Spring Boot
 HELP.md
+
+# Uploads
+uploads/
+
+# Claude Code
+.claude/
+
+# Invalid files
+nul
