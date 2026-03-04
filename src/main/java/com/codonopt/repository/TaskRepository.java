@@ -46,15 +46,14 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByStatus(TaskStatus status);
 
     /**
-     * 查找运行中的任务
+     * 统计运行中的任务数量
      */
-    @Query("SELECT t FROM Task t WHERE t.status = 'RUNNING'")
-    Optional<Task> findRunningTask();
+    long countByStatus(TaskStatus status);
 
     /**
      * 查找第一个排队的任务
      */
-    @Query("SELECT t FROM Task t WHERE t.status = 'QUEUED' ORDER BY t.submittedAt ASC")
+    @Query(value = "SELECT * FROM tasks WHERE status = 'QUEUED' ORDER BY submitted_at ASC LIMIT 1", nativeQuery = true)
     Optional<Task> findFirstQueuedTask();
 
     /**

@@ -42,10 +42,9 @@ public class CodonTaskScheduler {
             checkRunningTasksStatus();
 
             // 检查是否有运行中的任务
-            Optional<Task> runningTask = taskRepository.findRunningTask();
-            if (runningTask.isPresent()) {
-                Task running = runningTask.get();
-                log.info("任务正在运行中: {} (PID: {})", running.getTaskId(), running.getProcessPid());
+            long runningCount = taskRepository.countByStatus(TaskStatus.RUNNING);
+            if (runningCount > 0) {
+                log.info("有 {} 个任务正在运行中，等待当前任务完成", runningCount);
                 // 检查超时任务
                 checkTimeoutTasks();
                 return;
