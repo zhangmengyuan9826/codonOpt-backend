@@ -97,6 +97,15 @@ app:
     timeout: 7200000  # 2 hours in milliseconds
     mock-mode: true  # 启用模拟模式（不实际调用Perl脚本）
 
+  # Mock Task Script Configuration (for testing task queue)
+  mock-script:
+    # Linux/Unix shell script path
+    shell-script: scripts/mock_task_executor.sh
+    # Windows batch script path
+    batch-script: scripts\mock_task_executor.bat
+    # Script execution timeout (10 minutes)
+    timeout: 600000
+
   # Rate Limiting Configuration
   rate-limit:
     daily-limit: 10

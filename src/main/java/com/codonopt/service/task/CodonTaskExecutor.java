@@ -45,6 +45,15 @@ public class CodonTaskExecutor {
     @Value("${app.perl.mock-mode:true}")
     private boolean mockMode;
 
+    @Value("${app.mock-script.shell-script:scripts/mock_task_executor.sh}")
+    private String mockShellScript;
+
+    @Value("${app.mock-script.batch-script:scripts\\mock_task_executor.bat}")
+    private String mockBatchScript;
+
+    @Value("${app.mock-script.timeout:600000}")
+    private long mockScriptTimeout;
+
     private final TaskRepository taskRepository;
     private final NotificationService notificationService;
     private final FileUploadService fileUploadService;
@@ -70,12 +79,13 @@ public class CodonTaskExecutor {
 
     /**
      * 模拟任务执行（用于测试和演示）
+     * 调用外部脚本进行异步执行，立即返回
      *
      * @param task 任务对象
      */
     private void executeTaskMock(Task task) {
         String taskId = task.getTaskId();
-        log.info("Executing task in MOCK mode: {}", taskId);
+        log.info("Executing task in MOCK mode (async script): {}", taskId);
 
         try {
             // 1. 创建任务结果目录
@@ -83,71 +93,79 @@ public class CodonTaskExecutor {
             FileUtil.createDirectoryIfNotExists(taskResultDir);
 
             LocalDateTime startTime = LocalDateTime.now();
-            log.info("Task started at: {}", startTime);
 
-            // 2. 模拟处理延迟（随机3-10秒）
-            int delaySeconds = 3000 + (int) (Math.random() * 7000);
-            log.info("Simulating processing delay: {}ms", delaySeconds);
-            Thread.sleep(delaySeconds);
+            // 2. 异步启动脚本进程（立即返回）
+            Process process = startMockScriptProcess(task, taskResultDir, startTime);
 
-            // 3. 模拟随机成功或失败（90%成功率）
-            boolean isSuccess = Math.random() < 0.9;
-            LocalDateTime endTime = LocalDateTime.now();
+            // 3. 记录进程PID
+            int pid = getProcessId(process);
+            task.setProcessPid(pid);
+            task.setStartedAt(startTime);
+            taskRepository.save(task);
 
-            if (isSuccess) {
-                // 成功场景：生成结果文件
-                generateMockSuccessFiles(task, taskResultDir, startTime, endTime);
+            log.info("Mock task script started successfully with PID: {} for task: {}", pid, taskId);
+            log.info("Task will run in background for 5 minutes. Status will be updated upon completion.");
 
-                // 创建ZIP压缩包
-                String zipFilePath = taskResultDir + ".zip";
-                FileUtil.createZip(taskResultDir, zipFilePath);
+            // 注意：脚本正在后台异步执行
+            // 脚本完成后，状态更新由调度器通过检查结果文件来完成
+            // 或者可以通过监听进程退出事件来更新状态
 
-                // 生成结果摘要
-                Map<String, Object> resultSummary = generateMockResultSummary(task);
-
-                // 更新任务状态为完成
-                taskRepository.updateTaskCompleted(
-                        taskId,
-                        TaskStatus.COMPLETED,
-                        endTime,
-                        zipFilePath,
-                        objectMapper.writeValueAsString(resultSummary)
-                );
-
-                log.info("Task completed successfully: {}", taskId);
-
-                // 发送完成通知
-                File zipFile = new File(zipFilePath);
-                notificationService.notifyTaskCompletion(task, zipFile);
-
-            } else {
-                // 失败场景：生成失败信息
-                String errorMsg = "模拟分析失败：序列格式不符合" + task.getTargetSpecies().getDisplayName() + "的优化要求，" +
-                        "请检查输入序列是否包含非法字符或序列长度是否在允许范围内。";
-                generateMockFailureFiles(task, taskResultDir, startTime, endTime, errorMsg);
-
-                // 更新任务状态为失败
-                taskRepository.updateTaskFailed(
-                        taskId,
-                        TaskStatus.FAILED,
-                        endTime,
-                        errorMsg
-                );
-
-                log.warn("Task failed in mock mode: {}", taskId);
-
-                // 发送失败通知
-                notificationService.notifyTaskFailure(task, errorMsg);
-            }
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            log.error("Task execution interrupted: {}", taskId, e);
-            handleTaskFailure(task, "任务执行被中断");
         } catch (Exception e) {
-            log.error("Unexpected error during mock task execution: {}", taskId, e);
-            handleTaskFailure(task, "系统错误: " + e.getMessage());
+            log.error("Failed to start mock task script: {}", taskId, e);
+            handleTaskFailure(task, "启动任务脚本失败: " + e.getMessage());
         }
+    }
+
+    /**
+     * 启动模拟脚本进程（异步执行）
+     */
+    private Process startMockScriptProcess(Task task, String taskResultDir, LocalDateTime startTime) throws Exception {
+        // 检测操作系统
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+
+        String scriptPath;
+        String[] command;
+
+        if (isWindows) {
+            // Windows: 使用批处理脚本
+            scriptPath = Paths.get(mockBatchScript).toAbsolutePath().toString();
+            command = new String[]{
+                    "cmd",
+                    "/c",
+                    scriptPath,
+                    task.getTaskId(),
+                    taskResultDir,
+                    task.getSequenceType().name(),
+                    task.getTargetSpecies().name()
+            };
+        } else {
+            // Linux/Unix: 使用shell脚本
+            scriptPath = Paths.get(mockShellScript).toAbsolutePath().toString();
+            command = new String[]{
+                    "/bin/bash",
+                    scriptPath,
+                    task.getTaskId(),
+                    taskResultDir,
+                    task.getSequenceType().name(),
+                    task.getTargetSpecies().name()
+            };
+        }
+
+        log.debug("Executing mock script command: {}", String.join(" ", command));
+
+        // 启动进程（不等待，立即返回）
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        processBuilder.redirectErrorStream(true);
+
+        // 在新窗口中启动Windows批处理脚本（可选，便于调试）
+        // 如果想要在新窗口中看到执行过程，取消下面的注释
+        // if (isWindows) {
+        //     processBuilder.command("cmd", "/c", "start", "cmd", "/c", scriptPath,
+        //             task.getTaskId(), taskResultDir,
+        //             task.getSequenceType().name(), task.getTargetSpecies().name());
+        // }
+
+        return processBuilder.start();
     }
 
     /**
@@ -464,5 +482,114 @@ public class CodonTaskExecutor {
         } catch (Exception e) {
             log.error("Failed to terminate process: {}", pid, e);
         }
+    }
+
+    /**
+     * 检查任务状态并更新（由调度器调用）
+     * 这个方法定期检查运行中的任务，查看脚本是否执行完成
+     *
+     * @param task 任务对象
+     */
+    public void checkAndUpdateTaskStatus(Task task) {
+        if (task.getStatus() != TaskStatus.RUNNING) {
+            return;
+        }
+
+        String taskId = task.getTaskId();
+        String taskResultDir = Paths.get(resultDirectory, "task_" + taskId).toString();
+        File statusFile = new File(taskResultDir, "run.txt");
+
+        // 检查状态文件是否存在
+        if (!statusFile.exists()) {
+            log.debug("Status file not found for task: {}, task still running", taskId);
+            return;
+        }
+
+        try {
+            // 读取状态文件
+            String statusContent = FileUtil.readFile(statusFile.getAbsolutePath());
+
+            if (statusContent.contains("status:SUCCESS")) {
+                // 任务成功完成
+                log.info("Mock task completed successfully: {}", taskId);
+
+                // 创建ZIP压缩包
+                String zipFilePath = taskResultDir + ".zip";
+                FileUtil.createZip(taskResultDir, zipFilePath);
+
+                // 读取并生成结果摘要
+                Map<String, Object> resultSummary = readMockResultSummary(taskResultDir);
+
+                // 更新任务状态为完成
+                taskRepository.updateTaskCompleted(
+                        taskId,
+                        TaskStatus.COMPLETED,
+                        LocalDateTime.now(),
+                        zipFilePath,
+                        objectMapper.writeValueAsString(resultSummary)
+                );
+
+                // 发送完成通知
+                File zipFile = new File(zipFilePath);
+                notificationService.notifyTaskCompletion(task, zipFile);
+
+            } else if (statusContent.contains("status:FAILED")) {
+                // 任务失败
+                log.warn("Mock task failed: {}", taskId);
+
+                // 从状态文件中提取错误信息
+                String errorMsg = "任务执行失败";
+                String[] lines = statusContent.split("\n");
+                for (String line : lines) {
+                    if (line.startsWith("info:")) {
+                        errorMsg = line.substring(5);
+                        break;
+                    }
+                }
+
+                // 更新任务状态为失败
+                taskRepository.updateTaskFailed(
+                        taskId,
+                        TaskStatus.FAILED,
+                        LocalDateTime.now(),
+                        errorMsg
+                );
+
+                // 发送失败通知
+                notificationService.notifyTaskFailure(task, errorMsg);
+            } else {
+                log.debug("Task {} still running (status file exists but no completion status)", taskId);
+            }
+
+        } catch (Exception e) {
+            log.error("Error checking task status for: {}", taskId, e);
+        }
+    }
+
+    /**
+     * 从结果文件中读取摘要信息
+     */
+    private Map<String, Object> readMockResultSummary(String resultDir) throws Exception {
+        File resultFile = new File(resultDir, "result.txt");
+        Map<String, Object> summary = new HashMap<>();
+
+        if (resultFile.exists()) {
+            String resultContent = FileUtil.readFile(resultFile.getAbsolutePath());
+            String[] lines = resultContent.split("\n");
+
+            for (String line : lines) {
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    String key = parts[0];
+                    String value = parts[1];
+                    summary.put(key, value);
+                }
+            }
+        }
+
+        summary.put("status", "SUCCESS");
+        summary.put("message", "密码子优化完成（模拟模式）");
+
+        return summary;
     }
 }

@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -23,6 +24,7 @@ public class CodonTaskScheduler {
 
     private final TaskRepository taskRepository;
     private final CodonTaskExecutor taskExecutor;
+    private final TaskProcessingService taskProcessingService;
 
     // 确保同时只有一个任务在执行
     private final ReentrantLock executionLock = new ReentrantLock();
@@ -31,13 +33,19 @@ public class CodonTaskScheduler {
      * 定时检查并处理队列中的下一个任务
      * 每30秒执行一次
      */
-    @Scheduled(fixedDelay = 3000000)
+    @Scheduled(fixedDelay = 30000)
     public void checkAndProcessNextTask() {
+        log.info("===== 调度器触发: 检查任务队列 =====");
+
         try {
+            // 检查是否有运行中的任务并更新状态
+            checkRunningTasksStatus();
+
             // 检查是否有运行中的任务
             Optional<Task> runningTask = taskRepository.findRunningTask();
             if (runningTask.isPresent()) {
-                log.debug("Task is already running: {}", runningTask.get().getTaskId());
+                Task running = runningTask.get();
+                log.info("任务正在运行中: {} (PID: {})", running.getTaskId(), running.getProcessPid());
                 // 检查超时任务
                 checkTimeoutTasks();
                 return;
@@ -46,60 +54,56 @@ public class CodonTaskScheduler {
             // 获取队列中的第一个任务
             Optional<Task> nextTask = taskRepository.findFirstQueuedTask();
             if (!nextTask.isPresent()) {
-                log.debug("No tasks in queue");
+                log.info("队列中没有待处理的任务");
                 return;
             }
 
             Task task = nextTask.get();
-            log.info("Found task in queue: {}", task.getTaskId());
+            log.info("发现排队任务: {} - {}", task.getTaskId(), task.getTaskName());
 
             // 尝试获取执行锁
             if (executionLock.tryLock()) {
                 try {
-                    processTask(task);
+                    log.info("成功获取执行锁，开始处理任务: {}", task.getTaskId());
+                    taskProcessingService.processTaskWithTransaction(task);
                 } finally {
                     executionLock.unlock();
+                    log.info("释放执行锁");
                 }
             } else {
-                log.debug("Could not acquire execution lock, another task is being processed");
+                log.warn("无法获取执行锁，另一个任务正在被处理");
             }
 
         } catch (Exception e) {
-            log.error("Error in task scheduler", e);
+            log.error("调度器处理出错", e);
         }
+
+        log.info("===== 调度器检查完成 =====");
     }
 
     /**
-     * 处理任务
+     * 定时检查运行中任务的状态（用于异步脚本模式）
+     * 每30秒执行一次
      */
-    private void processTask(Task task) {
+    @Scheduled(fixedDelay = 30000)
+    public void checkRunningTasksStatus() {
         try {
-            log.info("Processing task: {}", task.getTaskId());
+            java.util.List<Task> runningTasks = taskRepository.findByStatus(TaskStatus.RUNNING);
 
-            // 更新任务状态为运行中
-            taskRepository.updateTaskStatus(
-                    task.getTaskId(),
-                    TaskStatus.RUNNING,
-                    LocalDateTime.now()
-            );
+            if (!runningTasks.isEmpty()) {
+                log.debug("Checking status of {} running tasks", runningTasks.size());
 
-            // 执行任务（异步执行）
-            executeTaskAsync(task);
+                for (Task task : runningTasks) {
+                    try {
+                        taskExecutor.checkAndUpdateTaskStatus(task);
+                    } catch (Exception e) {
+                        log.error("Error checking status for task: {}", task.getTaskId(), e);
+                    }
+                }
+            }
 
         } catch (Exception e) {
-            log.error("Failed to start task execution: {}", task.getTaskId(), e);
-        }
-    }
-
-    /**
-     * 异步执行任务
-     */
-    @org.springframework.scheduling.annotation.Async
-    public void executeTaskAsync(Task task) {
-        try {
-            taskExecutor.executeTask(task);
-        } catch (Exception e) {
-            log.error("Task execution failed: {}", task.getTaskId(), e);
+            log.error("Error checking running tasks status", e);
         }
     }
 
@@ -123,8 +127,8 @@ public class CodonTaskScheduler {
                     taskExecutor.terminateTask(task.getProcessPid());
                 }
 
-                // 更新任务状态为失败
-                taskRepository.updateTaskFailed(
+                // 使用 taskProcessingService 来更新失败状态（带事务）
+                taskProcessingService.markTaskAsFailed(
                         task.getTaskId(),
                         TaskStatus.FAILED,
                         LocalDateTime.now(),

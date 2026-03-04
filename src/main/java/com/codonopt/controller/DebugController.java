@@ -1,7 +1,11 @@
 package com.codonopt.controller;
 
+import com.codonopt.entity.Task;
 import com.codonopt.entity.User;
+import com.codonopt.enums.TaskStatus;
+import com.codonopt.repository.TaskRepository;
 import com.codonopt.repository.UserRepository;
+import com.codonopt.service.task.CodonTaskScheduler;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,6 +27,8 @@ public class DebugController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TaskRepository taskRepository;
+    private final CodonTaskScheduler taskScheduler;
 
     @GetMapping("/test-password")
     @Operation(summary = "测试密码", description = "测试密码验证")
@@ -103,6 +110,101 @@ public class DebugController {
         // 验证新密码
         boolean matches = passwordEncoder.matches(newPassword, newHash);
         result.put("verified", matches);
+
+        return result;
+    }
+
+    @GetMapping("/trigger-scheduler")
+    @Operation(summary = "手动触发调度器", description = "手动触发任务调度器，处理下一个排队任务")
+    public Map<String, Object> triggerScheduler() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            // 获取当前排队任务数量
+            List<Task> queuedTasks = taskRepository.findByStatusOrderBySubmittedAtAsc(TaskStatus.QUEUED);
+            List<Task> runningTasks = taskRepository.findByStatus(TaskStatus.RUNNING);
+
+            result.put("queuedTaskCount", queuedTasks.size());
+            result.put("runningTaskCount", runningTasks.size());
+
+            if (!queuedTasks.isEmpty()) {
+                result.put("nextTaskId", queuedTasks.get(0).getTaskId());
+                result.put("nextTaskName", queuedTasks.get(0).getTaskName());
+            }
+
+            if (!runningTasks.isEmpty()) {
+                result.put("runningTaskIds", runningTasks.stream()
+                        .map(Task::getTaskId)
+                        .toArray());
+            }
+
+            // 手动触发调度器
+            log.info("手动触发任务调度器");
+            taskScheduler.processNextTask();
+
+            result.put("success", true);
+            result.put("message", "调度器已触发");
+
+        } catch (Exception e) {
+            log.error("触发调度器失败", e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+
+        return result;
+    }
+
+    @GetMapping("/task-status")
+    @Operation(summary = "查看任务状态", description = "查看所有任务的状态统计")
+    public Map<String, Object> getTaskStatus() {
+        Map<String, Object> result = new HashMap<>();
+
+        try {
+            List<Task> queuedTasks = taskRepository.findByStatusOrderBySubmittedAtAsc(TaskStatus.QUEUED);
+            List<Task> runningTasks = taskRepository.findByStatus(TaskStatus.RUNNING);
+            List<Task> completedTasks = taskRepository.findByStatus(TaskStatus.COMPLETED);
+            List<Task> failedTasks = taskRepository.findByStatus(TaskStatus.FAILED);
+
+            result.put("QUEUED", queuedTasks.size());
+            result.put("RUNNING", runningTasks.size());
+            result.put("COMPLETED", completedTasks.size());
+            result.put("FAILED", failedTasks.size());
+
+            // 显示排队中的任务
+            if (!queuedTasks.isEmpty()) {
+                result.put("queuedTaskList", queuedTasks.stream()
+                        .map(t -> {
+                            Map<String, Object> taskInfo = new HashMap<>();
+                            taskInfo.put("taskId", t.getTaskId());
+                            taskInfo.put("taskName", t.getTaskName());
+                            taskInfo.put("submittedAt", t.getSubmittedAt().toString());
+                            taskInfo.put("queuePosition", t.getQueuePosition());
+                            return taskInfo;
+                        })
+                        .toArray());
+            }
+
+            // 显示运行中的任务
+            if (!runningTasks.isEmpty()) {
+                result.put("runningTaskList", runningTasks.stream()
+                        .map(t -> {
+                            Map<String, Object> taskInfo = new HashMap<>();
+                            taskInfo.put("taskId", t.getTaskId());
+                            taskInfo.put("taskName", t.getTaskName());
+                            taskInfo.put("startedAt", t.getStartedAt() != null ? t.getStartedAt().toString() : "N/A");
+                            taskInfo.put("processPid", t.getProcessPid() != null ? t.getProcessPid() : 0);
+                            return taskInfo;
+                        })
+                        .toArray());
+            }
+
+            result.put("success", true);
+
+        } catch (Exception e) {
+            log.error("获取任务状态失败", e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
 
         return result;
     }

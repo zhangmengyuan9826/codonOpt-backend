@@ -41,6 +41,11 @@ public interface TaskRepository extends JpaRepository<Task, String> {
     List<Task> findByStatusOrderBySubmittedAtAsc(TaskStatus status);
 
     /**
+     * 根据状态查找所有任务
+     */
+    List<Task> findByStatus(TaskStatus status);
+
+    /**
      * 查找运行中的任务
      */
     @Query("SELECT t FROM Task t WHERE t.status = 'RUNNING'")
@@ -67,8 +72,8 @@ public interface TaskRepository extends JpaRepository<Task, String> {
      * 更新任务状态
      */
     @Modifying
-    @Query("UPDATE Task t SET t.status = :status, t.startedAt = :startedAt WHERE t.taskId = :taskId")
-    int updateTaskStatus(@Param("taskId") String taskId, @Param("status") TaskStatus status, @Param("startedAt") LocalDateTime startedAt);
+    @Query(value = "UPDATE tasks SET status = :status, started_at = :startedAt WHERE task_id = :taskId", nativeQuery = true)
+    int updateTaskStatus(@Param("taskId") String taskId, @Param("status") String status, @Param("startedAt") LocalDateTime startedAt);
 
     /**
      * 更新任务完成状态
