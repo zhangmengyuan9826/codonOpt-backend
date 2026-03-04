@@ -101,10 +101,19 @@ public class TaskProcessingService {
     @Transactional
     public void markTaskAsFailed(String taskId, TaskStatus status, LocalDateTime completedAt, String errorMessage) {
         try {
-            taskRepository.updateTaskFailed(taskId, status, completedAt, errorMessage);
+            taskRepository.updateTaskFailed(taskId, status.name(), completedAt, errorMessage);
             log.info("任务 {} 已标记为失败: {}", taskId, errorMessage);
         } catch (Exception e) {
             log.error("标记任务失败状态时出错: {}", taskId, e);
         }
+    }
+
+    /**
+     * 检查任务状态并更新（带事务）
+     * 从CodonTaskExecutor移到这里以便事务管理
+     */
+    @Transactional
+    public void checkTaskStatusWithTransaction(com.codonopt.entity.Task task) {
+        taskExecutor.checkAndUpdateTaskStatus(task);
     }
 }

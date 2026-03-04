@@ -79,15 +79,15 @@ public interface TaskRepository extends JpaRepository<Task, String> {
      * 更新任务完成状态
      */
     @Modifying
-    @Query("UPDATE Task t SET t.status = :status, t.completedAt = :completedAt, t.resultFilesPath = :resultPath, t.resultSummary = :resultSummary WHERE t.taskId = :taskId")
-    int updateTaskCompleted(@Param("taskId") String taskId, @Param("status") TaskStatus status, @Param("completedAt") LocalDateTime completedAt, @Param("resultPath") String resultPath, @Param("resultSummary") String resultSummary);
+    @Query(value = "UPDATE tasks SET status = :status, completed_at = :completedAt, result_files_path = :resultPath, result_summary = :resultSummary WHERE task_id = :taskId", nativeQuery = true)
+    int updateTaskCompleted(@Param("taskId") String taskId, @Param("status") String status, @Param("completedAt") LocalDateTime completedAt, @Param("resultPath") String resultPath, @Param("resultSummary") String resultSummary);
 
     /**
      * 更新任务失败状态
      */
     @Modifying
-    @Query("UPDATE Task t SET t.status = :status, t.completedAt = :completedAt, t.errorMessage = :errorMessage WHERE t.taskId = :taskId")
-    int updateTaskFailed(@Param("taskId") String taskId, @Param("status") TaskStatus status, @Param("completedAt") LocalDateTime completedAt, @Param("errorMessage") String errorMessage);
+    @Query(value = "UPDATE tasks SET status = :status, completed_at = :completedAt, error_message = :errorMessage WHERE task_id = :taskId", nativeQuery = true)
+    int updateTaskFailed(@Param("taskId") String taskId, @Param("status") String status, @Param("completedAt") LocalDateTime completedAt, @Param("errorMessage") String errorMessage);
 
     /**
      * 更新队列位置

@@ -95,7 +95,8 @@ public class CodonTaskScheduler {
 
                 for (Task task : runningTasks) {
                     try {
-                        taskExecutor.checkAndUpdateTaskStatus(task);
+                        // 使用TaskProcessingService来检查状态（带事务）
+                        taskProcessingService.checkTaskStatusWithTransaction(task);
                     } catch (Exception e) {
                         log.error("Error checking status for task: {}", task.getTaskId(), e);
                     }

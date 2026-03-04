@@ -36,7 +36,8 @@ echo [%date% %time%] 开始模拟任务执行... >> "%LOG_FILE%"
 
 for /L %%i in (1,1,%TOTAL_STEPS%) do (
     echo [%date% %time%] 执行进度: %%i/%TOTAL_STEPS% >> "%LOG_FILE%"
-    timeout /t %STEP_DURATION% /nobreak > nul
+    REM 使用ping命令来实现延迟（更可靠）
+    ping 127.0.0.1 -n %STEP_DURATION% > nul
 )
 
 REM 记录结束时间
@@ -53,28 +54,16 @@ if %RANDOM_NUMBER% lss 90 (
     echo completedTime:%date% %time% >> "%STATUS_FILE%"
     echo status:SUCCESS >> "%STATUS_FILE%"
 
-    REM 生成模拟的优化序列
-    set OPTIMIZED_SEQ=ATGGCTGGATCC AACGAGCAGGTGCC
-    set OPTIMIZED_SEQ=%OPTIMIZED_SEQ: =%
+    REM 生成模拟的优化序列和结果
+    set CAI=0.85
+    set GC_CONTENT=52.3
+    set MFI=-320000.0
 
-    REM 生成随机指标
-    set /a CAI=65+%RANDOM% %%30
-    set CAI_DECIMAL=%RANDOM:~-2%
-    set CAI=%CAI%.%CAI_DECIMAL:~-0,2%
-
-    set /a GC=40+%RANDOM% %%25
-    set GC_DECIMAL=%RANDOM:~-2%
-    set GC_CONTENT=%GC%.%GC_DECIMAL:~-0,2%
-
-    set /a MFI_BASE=-500000+%RANDOM% %%300000
-    set MFI_DECIMAL=%RANDOM:~-2%
-    set MFI=%MFI_BASE%.%MFI_DECIMAL:~-0,2%
-
-    REM 生成result.txt
-    echo sequence:%OPTIMIZED_SEQ% > "%RESULT_FILE%"
-    echo CAI:%CAI% >> "%RESULT_FILE%"
-    echo GCContent:%GC_CONTENT% >> "%RESULT_FILE%"
-    echo MFI:%MFI% >> "%RESULT_FILE%"
+    REM 生成result.txt（使用延迟变量扩展）
+    echo sequence:ATGGCTGGATCCAACGAGCAGGTGCCATGGCTGGATCCAACGAGCAGGTGCCAAGGTTGGCACCTTCAAA> "%RESULT_FILE%"
+    echo CAI:%CAI%>> "%RESULT_FILE%"
+    echo GCContent:%GC_CONTENT%>> "%RESULT_FILE%"
+    echo MFI:%MFI%>> "%RESULT_FILE%"
 
     echo [%date% %time%] 成功生成结果文件 >> "%LOG_FILE%"
     echo [%date% %time%] 优化序列长度: 50 bp >> "%LOG_FILE%"

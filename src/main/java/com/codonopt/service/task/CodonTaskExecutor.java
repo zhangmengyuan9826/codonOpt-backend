@@ -343,7 +343,7 @@ public class CodonTaskExecutor {
             // 11. 更新任务状态为完成
             taskRepository.updateTaskCompleted(
                     taskId,
-                    TaskStatus.COMPLETED,
+                    TaskStatus.COMPLETED.name(),
                     LocalDateTime.now(),
                     zipFilePath,
                     objectMapper.writeValueAsString(resultSummary)
@@ -445,7 +445,7 @@ public class CodonTaskExecutor {
         try {
             taskRepository.updateTaskFailed(
                     task.getTaskId(),
-                    TaskStatus.FAILED,
+                    TaskStatus.FAILED.name(),
                     LocalDateTime.now(),
                     errorMessage
             );
@@ -523,7 +523,7 @@ public class CodonTaskExecutor {
                 // 更新任务状态为完成
                 taskRepository.updateTaskCompleted(
                         taskId,
-                        TaskStatus.COMPLETED,
+                        TaskStatus.COMPLETED.name(),
                         LocalDateTime.now(),
                         zipFilePath,
                         objectMapper.writeValueAsString(resultSummary)
@@ -550,7 +550,7 @@ public class CodonTaskExecutor {
                 // 更新任务状态为失败
                 taskRepository.updateTaskFailed(
                         taskId,
-                        TaskStatus.FAILED,
+                        TaskStatus.FAILED.name(),
                         LocalDateTime.now(),
                         errorMsg
                 );
