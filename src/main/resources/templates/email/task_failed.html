@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务失败通知</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .error-icon {
+            text-align: center;
+            font-size: 60px;
+            margin: 20px 0;
+        }
+        .error-info {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        .error-info h3 {
+            margin-top: 0;
+            color: #721c24;
+        }
+        .task-details {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .task-details table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .task-details td {
+            padding: 10px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .task-details td:first-child {
+            font-weight: bold;
+            width: 120px;
+        }
+        .suggestion {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 10px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❌ 任务失败通知</h1>
+            <p>很抱歉，您的任务执行失败</p>
+        </div>
+
+        <div class="content">
+
+            <p>您好 <strong th:text="${username}">User</strong>，</p>
+            <p>很抱歉，您的密码子优化任务执行失败。以下是详细信息：</p>
+
+            <div class="error-info">
+                <h3>错误信息</h3>
+                <p th:text="${errorMessage}">任务执行失败：序列格式不符合要求</p>
+            </div>
+
+            <div class="task-details">
+                <table>
+                    <tr>
+                        <td>任务ID：</td>
+                        <td th:text="${taskId}">abc123</td>
+                    </tr>
+                    <tr>
+                        <td>任务名称：</td>
+                        <td th:text="${taskName}">任务1</td>
+                    </tr>
+                    <tr>
+                        <td>失败时间：</td>
+                        <td th:text="${failedAt}">2026-03-05 14:35:00</td>
+                    </tr>
+                    <tr>
+                        <td>序列类型：</td>
+                        <td th:text="${sequenceType}">AMINO_ACID</td>
+                    </tr>
+                    <tr>
+                        <td>目标物种：</td>
+                        <td th:text="${targetSpecies}">HUMAN</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="suggestion">
+                <p><strong>💡 建议：</strong></p>
+                <p>1. 请检查输入序列格式是否正确</p>
+                <p>2. 确保序列只包含合法的氨基酸或核苷酸字符</p>
+                <p>3. 序列长度应在允许范围内（<span th:text="${minLength}">10</span>-<span th:text="${maxLength}">10000</span>）</p>
+                <p>4. 如果使用自定义物种，请确保上传了正确的密码子频率表文件</p>
+            </div>
+
+            <p style="text-align: center;">
+                <a th:href="${taskDetailUrl}" class="button">查看任务详情</a>
+            </p>
+
+            <p style="text-align: center; color: #666; font-size: 14px;">
+                如需帮助，请联系系统管理员
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>此邮件由系统自动发送，请勿直接回复</p>
+            <p>&copy; 2026 密码子优化系统 | 华大火眼研发团队</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>任务完成通知</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px;
+        }
+        .success-icon {
+            text-align: center;
+            font-size: 60px;
+            margin: 20px 0;
+        }
+        .result-summary {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .result-summary h3 {
+            margin-top: 0;
+            color: #155724;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .result-table td {
+            padding: 5px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .result-table td:first-child {
+            font-weight: bold;
+            width: 120px;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .metric-label {
+            font-size: 14px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✅ 任务完成通知</h1>
+            <p>您的密码子优化任务已成功完成</p>
+        </div>
+
+        <div class="content">
+            <p>您好 <strong th:text="${username}">User</strong>，</p>
+            <p>您的密码子优化任务已成功完成！以下是优化结果摘要：</p>
+
+            <div class="result-summary">
+                <h3>📊 优化结果摘要</h3>
+                <table class="result-table">
+                    <tr>
+                        <td>任务ID：</td>
+                        <td th:text="${taskId}">abc123</td>
+                    </tr>
+                    <tr>
+                        <td>任务名称：</td>
+                        <td th:text="${taskName}">任务1</td>
+                    </tr>
+                    <tr>
+                        <td>完成时间：</td>
+                        <td th:text="${completedAt}">2026-03-05 14:35:00</td>
+                    </tr>
+                    <tr>
+                        <td>序列类型：</td>
+                        <td th:text="${sequenceType}">AMINO_ACID</td>
+                    </tr>
+                    <tr>
+                        <td>目标物种：</td>
+                        <td th:text="${targetSpecies}">HUMAN</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value" th:text="${cai}">0.85</div>
+                    <div class="metric-label">CAI 值</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" th:text="${gcContent}">52.3%</div>
+                    <div class="metric-label">GC 含量</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" th:text="${optimizedLength}">150</div>
+                    <div class="metric-label">序列长度 (bp)</div>
+                </div>
+            </div>
+
+            <p>详细的优化结果已打包为ZIP文件，请点击下方按钮下载。</p>
+
+            <p style="text-align: center;">
+                <a th:href="${downloadUrl}" class="button">📥 下载结果文件</a>
+                <a th:href="${taskDetailUrl}" class="button">📊 查看任务详情</a>
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>此邮件由系统自动发送，请勿直接回复</p>
+            <p>&copy; 2026 密码子优化系统 | 华大火眼研发团队</p>
+        </div>
+    </div>
+</body>
+</html>
