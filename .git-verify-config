@@ -1,0 +1,17 @@
+# Git Configuration Verification
+
+This file is used to verify that Git commits are properly tracked in GitHub contributions.
+
+## Git Configuration
+- User: zhangmengyuan9826
+- Email: zhangmengyuan9826@gmail.com
+- Date: 2026-03-05
+
+## Verification Steps
+1. Check git config: `git config user.name && git config user.email`
+2. Visit: https://github.com/settings/emails
+3. Verify email is added and confirmed
+4. Check contributions at: https://github.com/zhangmengyuan9826
+
+## Expected Result
+This commit should appear in GitHub contributions calendar.
