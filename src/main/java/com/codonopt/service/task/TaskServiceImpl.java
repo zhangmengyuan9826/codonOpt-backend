@@ -14,6 +14,7 @@ import com.codonopt.exception.BusinessException;
 import com.codonopt.exception.RateLimitExceededException;
 import com.codonopt.repository.TaskRepository;
 import com.codonopt.repository.UserRepository;
+import com.codonopt.service.notification.NotificationService;
 import com.codonopt.service.security.RateLimitService;
 import com.codonopt.service.file.FileUploadService;
 import com.codonopt.util.SequenceValidator;
@@ -45,6 +46,7 @@ public class TaskServiceImpl {
     private final RateLimitService rateLimitService;
     private final FileUploadService fileUploadService;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      * 提交任务
@@ -114,6 +116,9 @@ public class TaskServiceImpl {
 
         // 9. 触发任务调度器（异步）
         taskScheduler.checkAndProcessNextTask();
+
+        // 10. 发送任务提交成功通知
+        notificationService.notifyTaskSubmitted(task);
 
         log.info("Task submitted successfully: {} by user: {}", task.getTaskId(), userId);
 

@@ -60,21 +60,29 @@ spring:
 
   # Mail Configuration
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: your_email@gmail.com
-    password: your_app_password_here
+    host: mailc.genomics.cn
+    username: bgi-hyrd@genomics.cn
+    password_false: 970912Zmy.......
+    password: HfUBRQhmY3jUDinQ
+    from: bgi-hyrd@genomics.cn
+    domain: genomics.cn
+    port: 465
+    protocol: smtps
     properties:
       mail:
         smtp:
           auth: true
-          starttls:
+          ssl:
             enable: true
             required: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            fallback: false
+            port: 465
         connectiontimeout: 10000
         timeout: 10000
         writetimeout: 10000
-
+        default-encoding: UTF-8
   # Servlet Multipart Configuration (for file uploads)
   servlet:
     multipart:

@@ -11,7 +11,7 @@ import com.codonopt.entity.User;
 import com.codonopt.enums.UserRole;
 import com.codonopt.exception.BusinessException;
 import com.codonopt.repository.UserRepository;
-import com.codonopt.service.mail.MailService;
+import com.codonopt.service.notification.NotificationService;
 import com.codonopt.service.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class AuthServiceImpl {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
-    private final MailService mailService;
+    private final NotificationService notificationService;
 
     /**
      * 用户注册
@@ -133,10 +133,8 @@ public class AuthServiceImpl {
         LocalDateTime expiryTime = LocalDateTime.now().plusSeconds(SecurityConstants.EMAIL_CODE_EXPIRATION / 1000);
         userRepository.setVerificationCode(email, verificationCode, expiryTime);
 
-        // 发送验证邮件
-        String content = String.format(EmailConstants.VERIFICATION_EMAIL_TEMPLATE,
-                user.getUsername(), verificationCode);
-        mailService.sendEmail(email, EmailConstants.VERIFICATION_SUBJECT, content);
+        // 发送验证邮件（使用HTML模板）
+        notificationService.notifyEmailVerification(email, user.getUsername(), verificationCode);
 
         log.info("Verification code sent to: {}", email);
     }
