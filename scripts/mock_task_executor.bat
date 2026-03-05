@@ -29,7 +29,7 @@ echo [%date% %time%] Sequence type: %SEQUENCE_TYPE% >> "%LOG_FILE%"
 echo [%date% %time%] Target species: %TARGET_SPECIES% >> "%LOG_FILE%"
 
 REM Simulate task progress (5 minutes = 300 seconds)
-set TOTAL_STEPS=10
+set TOTAL_STEPS=5
 set STEP_DURATION=30
 
 echo [%date% %time%] Starting mock task execution... >> "%LOG_FILE%"
@@ -61,9 +61,9 @@ if %RANDOM_NUMBER% lss 90 (
 
     REM Generate result.txt
     echo sequence:ATGGCTGGATCCAACGAGCAGGTGCCATGGCTGGATCCAACGAGCAGGTGCCAAGGTTGGCACCTTCAAA> "%RESULT_FILE%"
-    echo CAI:%CAI%>> "%RESULT_FILE%"
-    echo GCContent:%GC_CONTENT%>> "%RESULT_FILE%"
-    echo MFI:%MFI%>> "%RESULT_FILE%"
+    echo CAI:0.85>> "%RESULT_FILE%"
+    echo GCContent:52.3>> "%RESULT_FILE%"
+    echo MFI:-320000.0>> "%RESULT_FILE%"
 
     echo [%date% %time%] Successfully generated result files >> "%LOG_FILE%"
     echo [%date% %time%] Optimized sequence length: 50 bp >> "%LOG_FILE%"

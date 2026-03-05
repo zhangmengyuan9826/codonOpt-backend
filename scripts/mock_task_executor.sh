@@ -33,7 +33,7 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S')] Sequence type: $SEQUENCE_TYPE" >> "$LOG_FIL
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Target species: $TARGET_SPECIES" >> "$LOG_FILE"
 
 # Simulate task progress (5 minutes = 300 seconds)
-TOTAL_STEPS=10
+TOTAL_STEPS=3
 STEP_DURATION=30  # 30 seconds per step
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting mock task execution..." >> "$LOG_FILE"
@@ -73,7 +73,7 @@ EOF
     CAI=$(awk -v min=65 -v max=95 'BEGIN{srand(); printf "%.2f", min+rand()*(max-min)}')
     GC_CONTENT=$(awk -v min=40 -v max=65 'BEGIN{srand(); printf "%.2f", min+rand()*(max-min)}')
     MFI=$(awk -v min=-500000 -v max=-200000 'BEGIN{srand(); printf "%.2f", min+rand()*(max-min)}')
-
+    echo "#{CAI},#{GCContent},#{MFI}" >> "$LOG_FILE"
     # Generate result.txt
     cat > "$RESULT_FILE" <<EOF
 sequence:$OPTIMIZED_SEQ
