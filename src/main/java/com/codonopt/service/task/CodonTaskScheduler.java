@@ -84,7 +84,8 @@ public class CodonTaskScheduler {
      * 定时检查运行中任务的状态（用于异步脚本模式）
      * 每30秒执行一次
      */
-    @Scheduled(fixedDelay = 30000)
+//    @Scheduled(fixedDelay = 30000)
+    @Scheduled(fixedDelay = 10000)
     public void checkRunningTasksStatus() {
         try {
             java.util.List<Task> runningTasks = taskRepository.findByStatus(TaskStatus.RUNNING);
